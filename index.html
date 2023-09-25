@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleção de Usuário</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h1 class="text-center">Seleção de Usuário</h1>
+                    </div>
+                    <div class="card-body">
+                        <form id="userSelectionForm">
+                            <div class="form-group">
+                                <label for="selectedUser">Selecione um usuário:</label>
+                                <select class="form-control form-control-lg" id="selectedUser" required>
+                                    <!-- Opções de usuário serão preenchidas dinamicamente -->
+                                </select>
+                            </div>
+                            <div class="form-group text-center">
+                                <button type="submit" class="btn btn-primary">Selecionar</button>
+                            </div>
+                        </form>
+                        <div id="result" class="text-center mt-4">
+                            <!-- O resultado da seleção será exibido aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9w-BMC-4WrQppa6VnOCrszo4QMIyROXU",
+            authDomain: "euques-teste.firebaseapp.com",
+            databaseURL: "https://euques-teste-default-rtdb.firebaseio.com",
+            projectId: "euques-teste",
+            storageBucket: "euques-teste.appspot.com",
+            messagingSenderId: "48182046778",
+            appId: "1:48182046778:web:7c27c1c56b450e5c88c503",
+            measurementId: "G-69XSLM6T9F"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        const selectedUserDropdown = document.getElementById('selectedUser');
+        const userSelectionForm = document.getElementById('userSelectionForm');
+        const resultDiv = document.getElementById('result');
+
+        // Função para preencher o dropdown com os nomes dos usuários em ordem alfabética
+        function fillUserDropdown() {
+            const userRef = database.ref('cellinpower/users');
+            userRef.orderByChild('name').on('value', function(snapshot) {
+                selectedUserDropdown.innerHTML = '';
+                snapshot.forEach(function(childSnapshot) {
+                    const userData = childSnapshot.val();
+                    const userId = childSnapshot.key;
+                    const option = document.createElement('option');
+                    option.value = userId;
+                    option.text = userData.name;
+                    selectedUserDropdown.appendChild(option);
+                });
+            });
+        }
+
+        // Event listener para o formulário de seleção
+        userSelectionForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const selectedUserId = selectedUserDropdown.value;
+            if (selectedUserId) {
+                // Redireciona para a URL com a chave do usuário como parâmetro GET
+                window.location.href = `resultado.html?userId=${selectedUserId}`;
+            } else {
+                alert("Por favor, selecione um usuário.");
+            }
+        });
+
+        // Chama a função para preencher o dropdown ao carregar a página
+        fillUserDropdown();
+    </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Dados Firebase</title>
+    <!-- Adicione o link para o Bootstrap aqui -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Adicione o link para o FontAwesome aqui -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <style>
+        /* Estilo para cabeçalhos em cinza */
+        th {
+            color: #777;
+        }
+
+        /* Estilo para valores finais em destaque */
+        #totals {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: blue;
+        }
+
+            /* Ocultar formulário durante a impressão */
+    @media print {
+        #dataForm {
+            display: none;
+        }
+        #btnImprime {
+            display: none;
+        }
+    }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="display-5">Cadastro de Dados</h1>
+        <!-- Exibe o nome do usuário no topo da página -->
+        <h5>Nome: <span id="userName"></span></h3>
+        <form id="dataForm">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="cliente">Cliente:</label>
+                    <input type="text" class="form-control" id="cliente" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="plataforma">Plataforma:</label>
+                    <select class="form-control" id="plataforma" required>
+                        <option value="Mercado Livre">Mercado Livre</option>
+                        <option value="Whatsapp">Whatsapp</option>
+                        <option value="Web Site">Web Site</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="produto">Produto:</label>
+                <input type="text" class="form-control" id="produto" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="preco">Preço (R$):</label>
+                    <input type="number" step="0.01" class="form-control" id="preco" required>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="frete">Frete (R$):</label>
+                    <input type="number" step="0.01" class="form-control" id="frete" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary text-center">Cadastrar</button>
+        </form>
+<hr>
+        <div class="mt-4">
+            <h5 class="text-center">Dados Cadastrados</h2>
+            <div id="dataList" class="table-responsive table table-striped">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Plataforma</th>
+                            <th>Produto</th>
+                            <th>Preço</th>
+                            <th>Frete</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataRows"></tbody>
+                </table>
+            </div>
+        </div>
+<hr>        
+        <div class="mt-4">
+            <h5 class="text-center">Total dos Valores</h2>
+            <div id="totals" class="table-responsive table table-striped">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="h6">Total Preço</th>
+                            <th class="h6">Total Frete</th>
+                            <th class="h6">Total Preço + Frete</th>
+                            <th class="h6"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="totalPrice">R$ 0.00</td>
+                            <td id="totalFrete">R$ 0.00</td>
+                            <td id="totalPriceAndFrete">R$ 0.00</td>
+                            <td id="totalPriceAndFrete" class="text-right"> 
+                                <button class="btn btn-secondary btn-sm" id="btnImprime" onclick="imprimir()">Imprimir</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Ícone de carregamento -->
+        <div id="loadingIcon" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i> Carregando...
+        </div>
+    </div>
+
+
+
+
+    <!-- Adicione o link para o jQuery aqui -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Adicione a configuração do Firebase aqui -->
+    <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.9.1/firebase-database.js"></script>
+
+    <script>
+        // Função para obter o valor do parâmetro GET 'userId' da URL
+        function getParameterByName(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Obtenha o valor do parâmetro GET 'userId'
+        const userId = getParameterByName('userId');
+
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD9w-BMC-4WrQppa6VnOCrszo4QMIyROXU",
+            authDomain: "euques-teste.firebaseapp.com",
+            databaseURL: "https://euques-teste-default-rtdb.firebaseio.com",
+            projectId: "euques-teste",
+            storageBucket: "euques-teste.appspot.com",
+            messagingSenderId: "48182046778",
+            appId: "1:48182046778:web:7c27c1c56b450e5c88c503",
+            measurementId: "G-69XSLM6T9F"
+        };
+
+        // Inicialize o Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // Referência ao local do banco de dados que contém os dados
+        const dataRef = firebase.database().ref(`cellinpower/users/${userId}/data`);
+        
+        // Referência ao nome do usuário
+        const userNameRef = firebase.database().ref(`cellinpower/users/${userId}/name`);
+
+        // Exibe o nome do usuário no topo da página
+        userNameRef.on('value', (snapshot) => {
+            const userName = snapshot.val();
+            document.getElementById('userName').textContent = userName;
+        });
+
+        // Formulário de cadastro
+        const dataForm = document.getElementById('dataForm');
+
+        dataForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const cliente = document.getElementById('cliente').value;
+            const plataforma = document.getElementById('plataforma').value;
+            const produto = document.getElementById('produto').value;
+            const preco = parseFloat(document.getElementById('preco').value);
+            const frete = parseFloat(document.getElementById('frete').value);
+
+            if (isNaN(preco) || isNaN(frete)) {
+                alert('Por favor, insira valores válidos para Preço e Frete.');
+                return;
+            }
+
+            const data = {
+                cliente,
+                plataforma,
+                produto,
+                preco,
+                frete,
+                data: new Date().toLocaleDateString('pt-BR'), // Data no formato brasileiro
+            };
+
+            // Exibir ícone de carregamento
+            document.getElementById('loadingIcon').style.display = 'inline-block';
+
+            // Insere os dados no Firebase
+            dataRef.push(data, (error) => {
+                if (error) {
+                    alert('Ocorreu um erro ao cadastrar os dados.');
+                } else {
+                    // Limpa o formulário após o envio
+                    dataForm.reset();
+                    // Oculta o ícone de carregamento após o sucesso
+                    document.getElementById('loadingIcon').style.display = 'none';
+                }
+            });
+        });
+
+        // Leitura e exibição dos dados em tempo real
+        dataRef.on('value', (snapshot) => {
+            const dataList = document.getElementById('dataRows');
+            dataList.innerHTML = '';
+            
+            let totalPrice = 0;
+            let totalFrete = 0;
+
+            const dataArr = [];
+
+            snapshot.forEach((childSnapshot) => {
+                dataArr.push(childSnapshot.val());
+            });
+
+            dataArr.reverse(); // Inverte a ordem dos dados
+
+            dataArr.forEach((data) => {
+                dataList.innerHTML += `
+                    <tr>
+                        <td>${data.data}</td>
+                        <td>${data.cliente}</td>
+                        <td>${data.plataforma}</td>
+                        <td>${data.produto}</td>
+                        <td>R$ <strong> ${data.preco.toFixed(2)} </strong></td>
+                        <td>R$ ${data.frete.toFixed(2)}</td>
+                        <td>
+                            <button class="btn btn-light btn-sm rounded-circle" onclick="deleteData('${data.key}')">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+
+                // Calcula os totais
+                totalPrice += data.preco;
+                totalFrete += data.frete;
+            });
+
+            // Exibe os totais
+            document.getElementById('totalPrice').textContent = `R$ ${totalPrice.toFixed(2)}`;
+            document.getElementById('totalFrete').textContent = `R$ ${totalFrete.toFixed(2)}`;
+            document.getElementById('totalPriceAndFrete').textContent = `R$ ${(totalPrice + totalFrete).toFixed(2)}`;
+        });
+
+        // Função para excluir um registro
+        function deleteData(key) {
+            if (confirm('Tem certeza que deseja excluir este registro?')) {
+                dataRef.child(key).remove();
+            }
+        }
+
+
+        function imprimir() {
+        window.print(); // Esta função aciona a janela de impressão do navegador
+    }
+
+    </script>
+</body>
+</html>
